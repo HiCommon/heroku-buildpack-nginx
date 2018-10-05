@@ -18,7 +18,7 @@ http {
 
 			proxy_ssl_verify on;
 			rewrite /blog/?(.*) /$1  break;
-			proxy_pass http://hicommon.wpengine.com;
+			proxy_pass https://hicommon.wpengine.com;
 			
 		 	sub_filter         'hicommon.wpengine.com' 'ops-blog-proxy.herokuapp.com/blog';
 
