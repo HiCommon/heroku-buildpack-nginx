@@ -66,7 +66,7 @@ $ FORCE=1 bin/start-nginx-solo
 
 ### Deploying Buildpack Changes
 ```
-heroku buildpacks:publish common/nginx master
+heroku buildpacks:publish common/blog-proxy master
 ```
 
 ### Logging
