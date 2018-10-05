@@ -18,9 +18,9 @@ http {
 
 			proxy_pass http://hicommon.wpengine.com;
 			rewrite /blog/(.*) /$1  break;
-		 	sub_filter         'hicommon.wpengine.com' 'localhost/blog';
+		 	sub_filter         'hicommon.wpengine.com' 'ops-blog-proxy.herokuapp.com/blog';
 
-		   	add_header    X-Original-Host                 localhost;
+		   	add_header    X-Original-Host                 ops-blog-proxy.herokuapp.com;
 		   	proxy_set_header    Host                 hicommon.wpengine.com;
 		   	proxy_set_header  X-Real-IP $remote_addr;
 		    proxy_set_header  X-Forwarded-Proto http;
