@@ -17,7 +17,7 @@ http {
 			expires off;
 
 			rewrite /blog/(.*) /$1  break;
-			proxy_pass https://hicommon.wpengine.com;
+			proxy_pass http://hicommon.wpengine.com;
 			
 		 	sub_filter         'hicommon.wpengine.com' 'ops-blog-proxy.herokuapp.com/blog';
 
