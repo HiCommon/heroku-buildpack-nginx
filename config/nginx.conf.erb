@@ -18,7 +18,7 @@ http {
 
 			rewrite /blog/(.*) /$1  break;
 			proxy_redirect http:// $scheme://;
-			proxy_pass $scheme://hicommon.wpengine.com;
+			proxy_pass https://hicommon.wpengine.com;
 			
 		 	sub_filter         'hicommon.wpengine.com' 'ops-blog-proxy.herokuapp.com/blog';
 
