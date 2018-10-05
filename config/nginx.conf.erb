@@ -16,7 +16,7 @@ http {
 			add_header 'Cache-Control' 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
 			expires off;
 
-			rewrite /blog/(.*) /$1  break;
+			rewrite /blog/?(.*) /$1  break;
 			proxy_pass http://hicommon.wpengine.com;
 			
 		 	sub_filter         'hicommon.wpengine.com' 'ops-blog-proxy.herokuapp.com/blog';
