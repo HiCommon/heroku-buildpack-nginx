@@ -14,4 +14,4 @@ build-heroku-18:
 
 shell:
 	@echo "Opening heroku-16 shell..."
-	@docker run -v $(shell pwd):/buildpack --rm -it -e "STACK=heroku-16" -e "PORT=5000" -w /buildpack heroku/heroku:16 bash
+	@docker run -v $(shell pwd):/buildpack --rm -it -e "STACK=heroku-16" -e "PORT=5000" -p 5000:5000 -w /buildpack heroku/heroku:16 bash
