@@ -1,53 +1,12 @@
-# Heroku Buildpack: NGINX
+# Blog Proxy Buildpack
 
-Nginx-buildpack vendors NGINX inside a dyno and connects NGINX to an app server via UNIX domain sockets.
+This is a custom buildpack that reverse proxies a heroku app to the Common blog running on wpengine.
 
-## Motivation
-
-Some application servers (e.g. Ruby's Unicorn) halt progress when dealing with network I/O. Heroku's Cedar routing stack [buffers only the headers](https://devcenter.heroku.com/articles/http-routing#request-buffering) of inbound requests. (The Cedar router will buffer the headers and body of a response up to 1MB) Thus, the Heroku router engages the dyno during the entire body transfer –from the client to dyno. For applications servers with blocking I/O, the latency per request will be degraded by the content transfer. By using NGINX in front of the application server, we can eliminate a great deal of transfer time from the application server. In addition to making request body transfers more efficient, all other I/O should be improved since the application server need only communicate with a UNIX socket on localhost. Basically, for webservers that are not designed for efficient, non-blocking I/O, we will benefit from having NGINX to handle all I/O operations.
-
-## Versions
-
-* Buildpack Version: 1.1
-* NGINX Version: 1.9.5
-
-## Requirements (Proxy Mode)
-
-* Your webserver listens to the socket at `/tmp/nginx.socket`.
-* You touch `/tmp/app-initialized` when you are ready for traffic.
-* You can start your web server with a shell command.
-
-## Requirements (Solo Mode)
-
-* Add a custom nginx config to your app source code at `config/nginx.conf.erb`. You can start by copying the [sample config for nginx solo mode](config/nginx-solo-sample.conf.erb).
-
-## Features
-
-* Unified NXNG/App Server logs.
-* [L2met](https://github.com/ryandotsmith/l2met) friendly NGINX log format.
-* [Heroku request ids](https://devcenter.heroku.com/articles/http-request-id) embedded in NGINX logs.
-* Crashes dyno if NGINX or App server crashes. Safety first.
-* Language/App Server agnostic.
-* Customizable NGINX config.
-* Application coordinated dyno starts.
-
-### Logging
-
-NGINX will output the following style of logs:
-
-```
-measure.nginx.service=0.007 request_id=e2c79e86b3260b9c703756ec93f8a66d
-```
-
-You can correlate this id with your Heroku router logs:
-
-```
-at=info method=GET path=/ host=salty-earth-7125.herokuapp.com request_id=e2c79e86b3260b9c703756ec93f8a66d fwd="67.180.77.184" dyno=web.1 connect=1ms service=8ms status=200 bytes=21
-```
+The project was forked from [heroku-buildpack-nginx](https://github.com/heroku/heroku-buildpack-nginx) and heavily customized.
 
 ### Language/App Server Agnostic
 
-nginx-buildpack provides a command named `bin/start-nginx` this command takes another command as an argument. You must pass your app server's startup command to `start-nginx`.
+nginx-buildpack provides a command named `bin/start-nginx-solo` this command takes another command as an argument. You must pass your app server's startup command to `start-nginx`.
 
 For example, to get NGINX and Unicorn up and running:
 
@@ -56,16 +15,21 @@ $ cat Procfile
 web: bin/start-nginx bundle exec unicorn -c config/unicorn.rb
 ```
 
-### nginx Solo Mode
+### Running the Proxy on Heroku
 
-nginx-buildpack provides a command named `bin/start-nginx-solo`. This is for you if you don't want to run an additional app server on the Dyno.
-This mode requires you to put a `config/nginx.conf.erb` in your app code. You can start by coping the [sample config for nginx solo mode](config/nginx-solo-sample.conf.erb).
-For example, to get NGINX and Unicorn up and running:
+Setup a new Heroku app and create a `Procfile` with the following:
 
-```bash
-$ cat Procfile
+```
 web: bin/start-nginx-solo
 ```
+
+Setup the buildpack:
+
+```
+heroku buildpacks:add common/blog-proxy
+```
+
+Deploy and build the heroku app
 
 ### Setting the Worker Processes
 
@@ -97,99 +61,26 @@ To test the builds:
 ```
 $ make shell
 $ cp bin/nginx-$STACK bin/nginx
-$ FORCE=1 bin/start-nginx
+$ FORCE=1 bin/start-nginx-solo
 ```
 
-### Application/Dyno coordination
-
-The buildpack will not start NGINX until a file has been written to `/tmp/app-initialized`. Since NGINX binds to the dyno's $PORT and since the $PORT determines if the app can receive traffic, you can delay NGINX accepting traffic until your application is ready to handle it. The examples below show how/when you should write the file when working with Unicorn.
-
-## Setup
-
-Here are 2 setup examples. One example for a new app, another for an existing app. In both cases, we are working with ruby & unicorn. Keep in mind that this buildpack is not ruby specific.
-
-### Existing App
-
-Update Buildpacks
-```bash
-$ heroku buildpacks:add https://github.com/heroku/heroku-buildpack-nginx
+### Deploying Buildpack Changes
 ```
-Update Procfile:
-```
-web: bin/start-nginx bundle exec unicorn -c config/unicorn.rb
-```
-```bash
-$ git add Procfile
-$ git commit -m 'Update procfile for NGINX buildpack'
-```
-Update Unicorn Config
-```ruby
-require 'fileutils'
-listen '/tmp/nginx.socket'
-before_fork do |server,worker|
-	FileUtils.touch('/tmp/app-initialized')
-end
-```
-```bash
-$ git add config/unicorn.rb
-$ git commit -m 'Update unicorn config to listen on NGINX socket.'
-```
-Deploy Changes
-```bash
-$ git push heroku master
+heroku buildpacks:publish common/nginx master
 ```
 
-### New App
+### Logging
 
-```bash
-$ mkdir myapp; cd myapp
-$ git init
+NGINX will output the following style of logs:
+
 ```
-
-**Gemfile**
-```ruby
-source 'https://rubygems.org'
-gem 'unicorn'
+measure.nginx.service=0.007 request_id=e2c79e86b3260b9c703756ec93f8a66d
 ```
 
-**config.ru**
-```ruby
-run Proc.new {[200,{'Content-Type' => 'text/plain'}, ["hello world"]]}
-```
+You can correlate this id with your Heroku router logs:
 
-**config/unicorn.rb**
-```ruby
-require 'fileutils'
-preload_app true
-timeout 5
-worker_processes 4
-listen '/tmp/nginx.socket', backlog: 1024
-
-before_fork do |server,worker|
-	FileUtils.touch('/tmp/app-initialized')
-end
 ```
-Install Gems
-```bash
-$ bundle install
-```
-Create Procfile
-```
-web: bin/start-nginx bundle exec unicorn -c config/unicorn.rb
-```
-Create & Push Heroku App:
-```bash
-$ heroku create
-$ heroku buildpacks:add heroku/ruby
-$ heroku buildpacks:add https://github.com/heroku/heroku-buildpack-nginx
-$ git add .
-$ git commit -am "init"
-$ git push heroku master
-$ heroku logs -t
-```
-Visit App
-```
-$ heroku open
+at=info method=GET path=/ host=salty-earth-7125.herokuapp.com request_id=e2c79e86b3260b9c703756ec93f8a66d fwd="67.180.77.184" dyno=web.1 connect=1ms service=8ms status=200 bytes=21
 ```
 
 ## License
