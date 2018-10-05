@@ -16,6 +16,7 @@ http {
 			add_header 'Cache-Control' 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0';
 			expires off;
 
+			proxy_ssl_verify on;
 			rewrite /blog/?(.*) /$1  break;
 			proxy_pass http://hicommon.wpengine.com;
 			
