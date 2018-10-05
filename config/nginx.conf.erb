@@ -18,7 +18,7 @@ http {
 
 			proxy_pass http://hicommon.wpengine.com;
 			rewrite /blog/(.*) /$1  break;
-		 	sub_filter         'hicommon.wpengine.com' 'localhost:<%= ENV["PORT"] %>/blog';
+		 	sub_filter         'hicommon.wpengine.com' 'localhost/blog';
 
 		   	add_header    X-Original-Host                 localhost;
 		   	proxy_set_header    Host                 hicommon.wpengine.com;
